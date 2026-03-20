@@ -41,9 +41,29 @@ export default function Contact() {
     );
   });
 
-  const onSubmit = async () => {
+  const onSubmit = async (formData) => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      setSubmitState('idle');
+      const response = await fetch('https://formsubmit.co/ajax/patelmanan074@gmail.com', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          message: formData.message,
+          _subject: `Portfolio Contact - ${formData.name}`,
+          _captcha: 'false',
+          _template: 'table',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit form');
+      }
+
       setSubmitState('success');
       reset();
     } catch {
