@@ -18,10 +18,11 @@ export default function BackToTop() {
     <button
       onClick={handleClick}
       aria-label="Back to top"
-      className="fixed bottom-8 right-8 z-50 rounded-full p-3 transition-all duration-300 hover:scale-110"
+      className="fixed bottom-5 md:bottom-8 z-50 rounded-full p-3 transition-all duration-300 hover:scale-110"
       style={{
         backgroundColor: '#7C3AED',
         color: '#F1F5F9',
+        right: 'calc(1rem + env(safe-area-inset-right, 0px))',
         opacity: visible ? 1 : 0,
         pointerEvents: visible ? 'auto' : 'none',
       }}

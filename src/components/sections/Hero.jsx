@@ -19,12 +19,33 @@ export default function Hero({ reducedMotion, onIntroVisibilityChange }) {
   const ctaRef = useRef(null);
   const socialsRef = useRef(null);
   const introVisibleRef = useRef(true);
+  const [heroViewportHeight, setHeroViewportHeight] = React.useState(
+    typeof window !== 'undefined' ? `${window.innerHeight}px` : '100vh'
+  );
+  const [isMobileViewport, setIsMobileViewport] = React.useState(
+    typeof window !== 'undefined' ? window.innerWidth <= 768 : false
+  );
+
+  useEffect(() => {
+    const updateViewportMetrics = () => {
+      setHeroViewportHeight(`${window.innerHeight}px`);
+      setIsMobileViewport(window.innerWidth <= 768);
+    };
+    updateViewportMetrics();
+    window.addEventListener('resize', updateViewportMetrics);
+    window.addEventListener('orientationchange', updateViewportMetrics);
+    return () => {
+      window.removeEventListener('resize', updateViewportMetrics);
+      window.removeEventListener('orientationchange', updateViewportMetrics);
+    };
+  }, []);
 
   useEffect(() => {
     if (reducedMotion) {
       onIntroVisibilityChange?.(false);
       return;
     }
+    const isMobile = isMobileViewport;
 
     const els = [nameRef, titleRef, summaryRef, ctaRef].map((r) => r.current).filter(Boolean);
     // hide before animating
@@ -45,14 +66,19 @@ export default function Hero({ reducedMotion, onIntroVisibilityChange }) {
         0.9
       );
 
+    if (isMobile) {
+      gsap.set(heroCoreRef.current, { opacity: 0, scale: 0.98, y: 18 });
+    }
+
     const introTimeline = gsap.timeline({
       scrollTrigger: {
         trigger: heroRef.current,
         start: 'top top',
-        end: '+=900',
-        scrub: 1.2,
+        end: isMobile ? '+=460' : '+=900',
+        scrub: isMobile ? 0.9 : 1.2,
         pin: true,
         anticipatePin: 1,
+        invalidateOnRefresh: true,
         onUpdate: (self) => {
           const isIntroVisible = self.progress < 0.99;
           if (isIntroVisible !== introVisibleRef.current) {
@@ -65,38 +91,66 @@ export default function Hero({ reducedMotion, onIntroVisibilityChange }) {
       },
     });
 
-    introTimeline
-      .fromTo(
-        revealOverlayRef.current,
-        { '--reveal-size': '0px', scale: 1 },
-        { '--reveal-size': '140vmax', scale: 1.12, ease: 'none', duration: 1 },
-        0
-      )
-      .fromTo(
-        introTextRef.current,
-        { scale: 0.88, y: 24, opacity: 0.65 },
-        { scale: 1.24, y: -20, opacity: 1, ease: 'none', duration: 1 },
-        0
-      )
-      .fromTo(
-        introLogoRef.current,
-        { scale: 0.9, y: 12, opacity: 0.6 },
-        { scale: 1.2, y: -10, opacity: 1, ease: 'none', duration: 1 },
-        0
-      )
-      .fromTo(
-        heroCoreRef.current,
-        { opacity: 1, scale: 1, y: 0 },
-        { opacity: 0, scale: 0.94, y: -24, ease: 'none', duration: 0.45 },
-        0.55
-      );
+    if (isMobile) {
+      introTimeline
+        .fromTo(
+          revealOverlayRef.current,
+          { opacity: 1, scale: 1 },
+          { opacity: 0, scale: 1.06, ease: 'none', duration: 0.7 },
+          0
+        )
+        .fromTo(
+          introTextRef.current,
+          { scale: 1, y: 0, opacity: 1 },
+          { scale: 1.08, y: -12, opacity: 0, ease: 'none', duration: 0.65 },
+          0
+        )
+        .fromTo(
+          introLogoRef.current,
+          { scale: 1, y: 0, opacity: 1 },
+          { scale: 1.1, y: -8, opacity: 0, ease: 'none', duration: 0.6 },
+          0
+        )
+        .fromTo(
+          heroCoreRef.current,
+          { opacity: 0, scale: 0.98, y: 18 },
+          { opacity: 1, scale: 1, y: 0, ease: 'power2.out', duration: 0.45 },
+          0.52
+        );
+    } else {
+      introTimeline
+        .fromTo(
+          revealOverlayRef.current,
+          { '--reveal-size': '0px', scale: 1, opacity: 1 },
+          { '--reveal-size': '140vmax', scale: 1.12, opacity: 1, ease: 'none', duration: 1 },
+          0
+        )
+        .fromTo(
+          introTextRef.current,
+          { scale: 0.88, y: 24, opacity: 0.65 },
+          { scale: 1.24, y: -20, opacity: 1, ease: 'none', duration: 1 },
+          0
+        )
+        .fromTo(
+          introLogoRef.current,
+          { scale: 0.9, y: 12, opacity: 0.6 },
+          { scale: 1.2, y: -10, opacity: 1, ease: 'none', duration: 1 },
+          0
+        )
+        .fromTo(
+          heroCoreRef.current,
+          { opacity: 1, scale: 1, y: 0 },
+          { opacity: 0, scale: 0.94, y: -24, ease: 'none', duration: 0.45 },
+          0.55
+        );
+    }
 
     return () => {
       tl.kill();
       introTimeline.kill();
       onIntroVisibilityChange?.(false);
     };
-  }, [reducedMotion, onIntroVisibilityChange]);
+  }, [reducedMotion, onIntroVisibilityChange, isMobileViewport]);
 
   const scrollToAbout = () => {
     document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
@@ -106,7 +160,16 @@ export default function Hero({ reducedMotion, onIntroVisibilityChange }) {
     <section
       ref={heroRef}
       id="hero"
-      style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', isolation: 'isolate' }}
+      style={{
+        position: 'relative',
+        height: heroViewportHeight,
+        minHeight: heroViewportHeight,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        isolation: 'isolate',
+      }}
     >
       {!reducedMotion && (
         <div
@@ -116,17 +179,24 @@ export default function Hero({ reducedMotion, onIntroVisibilityChange }) {
             '--reveal-size': '0px',
             position: 'absolute',
             inset: 0,
+            width: '100%',
+            height: '100%',
             zIndex: 20,
             pointerEvents: 'none',
             backgroundImage:
               'radial-gradient(circle at 50% 45%, rgba(6,182,212,0.2), rgba(10,10,15,0.72) 70%), linear-gradient(140deg, rgba(124,58,237,0.3), rgba(6,182,212,0.18)), url("/hero-reveal-nebula.png")',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            backgroundSize: 'cover, cover, cover',
+            backgroundPosition: 'center center, center center, center center',
+            backgroundRepeat: 'no-repeat, no-repeat, no-repeat',
             filter: 'saturate(1.18) contrast(1.08) brightness(0.9)',
             WebkitMaskImage:
-              'radial-gradient(circle at center, transparent var(--reveal-size), black calc(var(--reveal-size) + 1px))',
+              isMobileViewport
+                ? 'none'
+                : 'radial-gradient(circle at center, transparent var(--reveal-size), black calc(var(--reveal-size) + 1px))',
             maskImage:
-              'radial-gradient(circle at center, transparent var(--reveal-size), black calc(var(--reveal-size) + 1px))',
+              isMobileViewport
+                ? 'none'
+                : 'radial-gradient(circle at center, transparent var(--reveal-size), black calc(var(--reveal-size) + 1px))',
           }}
         >
           <div
