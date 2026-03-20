@@ -54,6 +54,8 @@ export default function Contact() {
           name: formData.name,
           email: formData.email,
           message: formData.message,
+          submitted_at_ist: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+          submitted_at_utc: new Date().toISOString(),
           _subject: `Portfolio Contact - ${formData.name}`,
           _captcha: 'false',
           _template: 'table',
